@@ -1,5 +1,6 @@
 package org.django.tennis.service;
 
+import org.assertj.core.groups.Tuple;
 import org.django.tennis.data.PlayerList;
 import org.django.tennis.entities.Player;
 import org.django.tennis.exception.PlayerNotFoundException;
@@ -72,4 +73,23 @@ class PlayerServiceTest {
 
         assertThat(exception.getMessage()).isEqualTo("Player with last name " + unknwonPlayer + " could not be found");
     }
+
+    @Test
+    public void shouldDeletePlayer() {
+        // Given
+        String playerToDelete = "DjokovicTest";
+
+        // When
+        playerService.delete(playerToDelete);
+        List<Player> allPlayers = playerService.getAllPlayers();
+
+
+        // Then
+        assertThat(allPlayers)
+                .extracting("lastName", "rank.position")
+                .containsExactly(Tuple.tuple("NadalTest", 1), Tuple.tuple("FedererTest", 2));
+    }
+
+
+
 }
