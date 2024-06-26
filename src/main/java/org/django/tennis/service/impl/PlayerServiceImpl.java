@@ -11,6 +11,8 @@ import org.django.tennis.model.PlayerToRegister;
 import org.django.tennis.repository.PlayerRepository;
 import org.django.tennis.service.PlayerService;
 import org.django.tennis.service.RankingCalculator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 @Service
 public class PlayerServiceImpl implements PlayerService {
 
+    private final Logger log = LoggerFactory.getLogger(PlayerServiceImpl.class);
+
     private final PlayerRepository playerRepository;
 
     public PlayerServiceImpl(PlayerRepository playerRepository) {
@@ -31,6 +35,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public List<Player> getAllPlayers() {
+        log.info("Invoking getAllPlayers");
        try{
            return playerRepository.findAll().stream()
                    .map(player -> new Player(
@@ -48,9 +53,11 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public Player getByLastName(String lastName) {
+        log.info("Invoking getByLastName with lastName {}", lastName);
        try {
            Optional<PlayerEntity> player = playerRepository.findOneByLastNameIgnoreCase(lastName);
            if (player.isEmpty()){
+               log.warn("Player with lastName {} not found", lastName);
                throw new PlayerNotFoundException(lastName);
            }
            return new Player(
@@ -65,6 +72,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public Player create(PlayerToRegister playerToSave) {
+        log.info("Invoking create player {}", playerToSave);
        try {
            Optional<PlayerEntity> player = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
            if (player.isPresent()) {
@@ -93,6 +101,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public Player update(PlayerToRegister playerToSave) {
+        log.info("Invoking update player {}", playerToSave);
        try {
            Optional<PlayerEntity> playerToUpdate = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
            if (playerToUpdate.isEmpty()) {
@@ -116,9 +125,11 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public void delete(String lastName) {
+        log.info("Invoking delete player {}", lastName);
       try {
           Optional<PlayerEntity> playerDelete = playerRepository.findOneByLastNameIgnoreCase(lastName);
           if (playerDelete.isEmpty()){
+              log.warn("Player with lastName {} not found", lastName);
               throw new PlayerNotFoundException(lastName);
 
           }
