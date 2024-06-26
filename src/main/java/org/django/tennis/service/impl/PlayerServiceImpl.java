@@ -47,6 +47,7 @@ public class PlayerServiceImpl implements PlayerService {
                    .sorted(Comparator.comparing(player -> player.rank().position()))
                    .collect(Collectors.toList());
        }catch (DataAccessException e){
+           log.error("Could not retrieve all players", e);
            throw new PlayerDataRetrievalException(e);
        }
     }
@@ -66,6 +67,7 @@ public class PlayerServiceImpl implements PlayerService {
                    player.get().getBirthDate(),
                    new Rank(player.get().getRank(), player.get().getPoints()));
        }catch (DataAccessException e){
+           log.error("Could not retrieve player with lastName {}", lastName, e);
            throw new PlayerDataRetrievalException(e);
        }
     }
@@ -76,6 +78,7 @@ public class PlayerServiceImpl implements PlayerService {
        try {
            Optional<PlayerEntity> player = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
            if (player.isPresent()) {
+               log.warn("Player with lastName {} already exists", playerToSave.lastName());
                throw new PlayerAlreadyExistException(playerToSave.lastName());
            }
 
@@ -94,6 +97,7 @@ public class PlayerServiceImpl implements PlayerService {
 
            return getByLastName(registeredPlayer.getLastName());
        }catch (DataAccessException e){
+           log.error("Could not create player with lastName {}", playerToSave.lastName(), e);
            throw new PlayerDataRetrievalException(e);
        }
 
@@ -105,6 +109,7 @@ public class PlayerServiceImpl implements PlayerService {
        try {
            Optional<PlayerEntity> playerToUpdate = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
            if (playerToUpdate.isEmpty()) {
+               log.warn("Player with lastName {} not found", playerToSave.lastName());
                throw new PlayerNotFoundException(playerToSave.lastName());
            }
 
@@ -119,6 +124,7 @@ public class PlayerServiceImpl implements PlayerService {
 
            return getByLastName(updatedPlayer.getLastName());
        }catch (DataAccessException e){
+           log.error("Could not update player with lastName {}", playerToSave.lastName(), e);
            throw new PlayerDataRetrievalException(e);
        }
     }
@@ -138,6 +144,7 @@ public class PlayerServiceImpl implements PlayerService {
           List<PlayerEntity> newRanking = rankingCalculator.getNewPlayersRanking();
           playerRepository.saveAll(newRanking);
       }catch (DataAccessException e){
+          log.error("Could not delete player with lastName {}", lastName, e);
           throw new PlayerDataRetrievalException(e);
       }
 
