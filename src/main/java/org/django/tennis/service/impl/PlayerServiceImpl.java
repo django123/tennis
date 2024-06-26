@@ -3,6 +3,7 @@ package org.django.tennis.service.impl;
 import org.django.tennis.entities.PlayerEntity;
 import org.django.tennis.entities.Rank;
 import org.django.tennis.exception.PlayerAlreadyExistException;
+import org.django.tennis.exception.PlayerDataRetrievalException;
 import org.django.tennis.exception.PlayerNotFoundException;
 import org.django.tennis.entities.Player;
 import org.django.tennis.entities.PlayerList;
@@ -10,6 +11,7 @@ import org.django.tennis.model.PlayerToRegister;
 import org.django.tennis.repository.PlayerRepository;
 import org.django.tennis.service.PlayerService;
 import org.django.tennis.service.RankingCalculator;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -29,84 +31,104 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public List<Player> getAllPlayers() {
-        return playerRepository.findAll().stream()
-                .map(player -> new Player(
-                      player.getFirstName(),
-                      player.getLastName(),
-                      player.getBirthDate(),
-                      new Rank(player.getRank(), player.getPoints())
-                ))
-                .sorted(Comparator.comparing(player -> player.rank().position()))
-                .collect(Collectors.toList());
+       try{
+           return playerRepository.findAll().stream()
+                   .map(player -> new Player(
+                           player.getFirstName(),
+                           player.getLastName(),
+                           player.getBirthDate(),
+                           new Rank(player.getRank(), player.getPoints())
+                   ))
+                   .sorted(Comparator.comparing(player -> player.rank().position()))
+                   .collect(Collectors.toList());
+       }catch (DataAccessException e){
+           throw new PlayerDataRetrievalException(e);
+       }
     }
 
     @Override
     public Player getByLastName(String lastName) {
-        Optional<PlayerEntity> player = playerRepository.findOneByLastNameIgnoreCase(lastName);
-        if (player.isEmpty()){
-            throw new PlayerNotFoundException(lastName);
-        }
-        return new Player(
-                player.get().getFirstName(),
-                player.get().getLastName(),
-                player.get().getBirthDate(),
-                new Rank(player.get().getRank(), player.get().getPoints()));
+       try {
+           Optional<PlayerEntity> player = playerRepository.findOneByLastNameIgnoreCase(lastName);
+           if (player.isEmpty()){
+               throw new PlayerNotFoundException(lastName);
+           }
+           return new Player(
+                   player.get().getFirstName(),
+                   player.get().getLastName(),
+                   player.get().getBirthDate(),
+                   new Rank(player.get().getRank(), player.get().getPoints()));
+       }catch (DataAccessException e){
+           throw new PlayerDataRetrievalException(e);
+       }
     }
 
     @Override
     public Player create(PlayerToRegister playerToSave) {
-        Optional<PlayerEntity> player = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
-        if (player.isPresent()) {
-            throw new PlayerAlreadyExistException(playerToSave.lastName());
-        }
+       try {
+           Optional<PlayerEntity> player = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
+           if (player.isPresent()) {
+               throw new PlayerAlreadyExistException(playerToSave.lastName());
+           }
 
-        PlayerEntity playerToRegister = new PlayerEntity(
-                playerToSave.lastName(),
-                playerToSave.firstName(),
-                playerToSave.birthDate(),
-                playerToSave.points(),
-                999999999);
+           PlayerEntity playerToRegister = new PlayerEntity(
+                   playerToSave.lastName(),
+                   playerToSave.firstName(),
+                   playerToSave.birthDate(),
+                   playerToSave.points(),
+                   999999999);
 
-        PlayerEntity registeredPlayer = playerRepository.save(playerToRegister);
+           PlayerEntity registeredPlayer = playerRepository.save(playerToRegister);
 
-        RankingCalculator rankingCalculator = new RankingCalculator(playerRepository.findAll());
-        List<PlayerEntity> newRanking = rankingCalculator.getNewPlayersRanking();
-        playerRepository.saveAll(newRanking);
+           RankingCalculator rankingCalculator = new RankingCalculator(playerRepository.findAll());
+           List<PlayerEntity> newRanking = rankingCalculator.getNewPlayersRanking();
+           playerRepository.saveAll(newRanking);
 
-        return getByLastName(registeredPlayer.getLastName());
+           return getByLastName(registeredPlayer.getLastName());
+       }catch (DataAccessException e){
+           throw new PlayerDataRetrievalException(e);
+       }
 
     }
 
     @Override
     public Player update(PlayerToRegister playerToSave) {
-        Optional<PlayerEntity> playerToUpdate = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
-        if (playerToUpdate.isEmpty()) {
-            throw new PlayerNotFoundException(playerToSave.lastName());
-        }
+       try {
+           Optional<PlayerEntity> playerToUpdate = playerRepository.findOneByLastNameIgnoreCase(playerToSave.lastName());
+           if (playerToUpdate.isEmpty()) {
+               throw new PlayerNotFoundException(playerToSave.lastName());
+           }
 
-        playerToUpdate.get().setFirstName(playerToSave.firstName());
-        playerToUpdate.get().setBirthDate(playerToSave.birthDate());
-        playerToUpdate.get().setPoints(playerToSave.points());
-        PlayerEntity updatedPlayer = playerRepository.save(playerToUpdate.get());
+           playerToUpdate.get().setFirstName(playerToSave.firstName());
+           playerToUpdate.get().setBirthDate(playerToSave.birthDate());
+           playerToUpdate.get().setPoints(playerToSave.points());
+           PlayerEntity updatedPlayer = playerRepository.save(playerToUpdate.get());
 
-        RankingCalculator rankingCalculator = new RankingCalculator(playerRepository.findAll());
-        List<PlayerEntity> newRanking = rankingCalculator.getNewPlayersRanking();
-        playerRepository.saveAll(newRanking);
+           RankingCalculator rankingCalculator = new RankingCalculator(playerRepository.findAll());
+           List<PlayerEntity> newRanking = rankingCalculator.getNewPlayersRanking();
+           playerRepository.saveAll(newRanking);
 
-        return getByLastName(updatedPlayer.getLastName());
+           return getByLastName(updatedPlayer.getLastName());
+       }catch (DataAccessException e){
+           throw new PlayerDataRetrievalException(e);
+       }
     }
 
     @Override
     public void delete(String lastName) {
-        Optional<PlayerEntity> playerDelete = playerRepository.findOneByLastNameIgnoreCase(lastName);
-        if (playerDelete.isEmpty()){
-            throw new PlayerNotFoundException(lastName);
+      try {
+          Optional<PlayerEntity> playerDelete = playerRepository.findOneByLastNameIgnoreCase(lastName);
+          if (playerDelete.isEmpty()){
+              throw new PlayerNotFoundException(lastName);
 
-        }
-        playerRepository.delete(playerDelete.get());
-        RankingCalculator rankingCalculator = new RankingCalculator(playerRepository.findAll());
-        List<PlayerEntity> newRanking = rankingCalculator.getNewPlayersRanking();
-        playerRepository.saveAll(newRanking);
+          }
+          playerRepository.delete(playerDelete.get());
+          RankingCalculator rankingCalculator = new RankingCalculator(playerRepository.findAll());
+          List<PlayerEntity> newRanking = rankingCalculator.getNewPlayersRanking();
+          playerRepository.saveAll(newRanking);
+      }catch (DataAccessException e){
+          throw new PlayerDataRetrievalException(e);
+      }
 
     }
 

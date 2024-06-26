@@ -1,6 +1,7 @@
 package org.django.tennis.rest;
 
 import org.django.tennis.exception.Error;
+import org.django.tennis.exception.PlayerDataRetrievalException;
 import org.django.tennis.exception.PlayerNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
@@ -35,6 +36,12 @@ public class PlayerControllerErrorHandler {
     @ExceptionHandler(PlayerNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Error handlePlayerNotFoundException(PlayerNotFoundException exception){
+        return new Error(exception.getMessage());
+    }
+
+    @ExceptionHandler(PlayerDataRetrievalException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Error handlePlayerDataRetrievalException(PlayerDataRetrievalException exception){
         return new Error(exception.getMessage());
     }
 }
