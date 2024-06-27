@@ -45,31 +45,26 @@ public class SecurityConfiguration {
                 .headers(headers ->
                         headers
                                 .contentSecurityPolicy(csp ->
-                                        csp.policyDirectives("default-src 'self' data:;" +
-                                                "style-src 'self' maxcdn.bootstrapcdn.com getbootstrap.com 'unsafe-inline';"))
-
-                                .frameOptions(frameOptionsConfig -> frameOptionsConfig.deny())
-                                .permissionsPolicy(permissions ->
-                                        permissions.policy(
-                                                "fullscreen=(self), geolocation=(), microphone=(), camera=()"
-                                        )
+                                        csp.policyDirectives("default-src 'self' data:; style-src 'self' 'unsafe-inline';")
                                 )
-
+                                .frameOptions(frameOptionsConfig -> frameOptionsConfig.deny())
+                                .permissionsPolicy(permissionsPolicyConfig -> permissionsPolicyConfig.policy(
+                                        "fullscreen=(self), geolocation=(), microphone=(), camera=()"
+                                ))
                 )
-
                 .authorizeHttpRequests(authorizations ->
                         authorizations
+                                .requestMatchers("/swagger-ui/**").permitAll()
+                                .requestMatchers("/v3/api-docs/**").permitAll()
+                                .requestMatchers("/accounts/login").permitAll()
                                 .requestMatchers("/healthcheck").permitAll()
+                                .requestMatchers("/actuator/**").hasAuthority("ROLE_ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/players/**").hasAuthority("ROLE_USER")
-                                .requestMatchers(HttpMethod.PUT, "/players/**").hasAuthority("ROLE_ADMIN")
                                 .requestMatchers(HttpMethod.POST, "/players/**").hasAuthority("ROLE_ADMIN")
+                                .requestMatchers(HttpMethod.PUT, "/players/**").hasAuthority("ROLE_ADMIN")
                                 .requestMatchers(HttpMethod.DELETE, "/players/**").hasAuthority("ROLE_ADMIN")
                                 .anyRequest().authenticated()
-                )
-                .formLogin(form ->
-                        form.defaultSuccessUrl("/swagger-ui/index.html#/", true)
                 );
-
         return http.build();
     }
 }
